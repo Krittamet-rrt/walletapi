@@ -19,7 +19,7 @@ class MerchantBase(BaseModel):
 
 class Merchant(MerchantBase, SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    items: list["Item"] = Relationship(back_populates="merchant")
+    items: list["Item"] = Relationship(back_populates="merchant", cascade_delete=True)
 
 # Define the Item model
 class ItemBase(BaseModel):
@@ -141,7 +141,7 @@ async def delete_merchant(merchant_id: int, session: Session = Depends(get_sessi
     if db_merchant:
         session.delete(db_merchant)
         session.commit()
-        return {"message": "Merchant deleted successfully"}
+        return {"message": "Merchant and item deleted successfully"}
     raise HTTPException(status_code=404, detail="Merchant not found")
 
 # Item CRUD operations
