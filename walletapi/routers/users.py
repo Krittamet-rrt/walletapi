@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
 
-from typing import Annotated
+from typing import Annotated, Dict
 
 from .. import deps
 from .. import models
@@ -61,26 +61,29 @@ async def create(
 async def change_password(
     user_id: str,
     password_update: models.ChangedPassword,
+    session: Annotated[AsyncSession, Depends(models.get_session)],
     current_user: models.User = Depends(deps.get_current_user),
-) -> dict():
+) -> Dict[str, str]:
 
-    result = await session.get(models.DBUser, user_id)
+    user = await session.get(models.DBUser, user_id)
 
-    if user:
+    if not user:
         raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Not found this user",
         )
 
     if not user.verify_password(password_update.current_password):
         raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect password",
         )
 
-    user.set_password(password_update.new_password)
+    await user.set_password(password_update.new_password)
     session.add(user)
     await session.commit()
+    
+    return {"message": "Password changed successfully"}
 
 
 @router.put("/{user_id}/update")
@@ -88,24 +91,28 @@ async def update(
     request: Request,
     user_id: str,
     user_update: models.UpdatedUser,
+    session: Annotated[AsyncSession, Depends(models.get_session)],
     current_user: models.User = Depends(deps.get_current_user),
 ) -> models.User:
 
     user = await session.get(models.DBUser, user_id)
 
-    if user:
+    if not user:
         raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Not found this user",
         )
 
-    if not user.verify_password(password_update.current_password):
+    if not user.verify_password(user_update.current_password):
         raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect password",
         )
 
-    user.update(**set_dict)
+    set_dict = user_update.dict(exclude_unset=True, exclude={'current_password'})
+    for key, value in set_dict.items():
+        setattr(user, key, value)
+
     session.add(user)
     await session.commit()
     await session.refresh(user)

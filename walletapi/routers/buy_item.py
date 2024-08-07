@@ -1,40 +1,39 @@
 from fastapi import APIRouter, HTTPException, Depends
 
-from sqlmodel import Session
+from typing import Annotated
 
-from models.dbmodels import Wallet, Item, Merchant, Transaction
+from sqlmodel.ext.asyncio.session import AsyncSession
 
-from models import get_session
+from models.dbmodels import DBWallet, DBItem, DBMerchant, DBTransaction
+
+from .. import models
 
 router = APIRouter(prefix="/buy_item", tags=["Buy Item"])
 
 @router.post("")
-async def buy_item(item_id: int, wallet_id: int, session: Session = Depends(get_session)):
-    item = session.get(Item, item_id)
+async def buy_item(item_id: int, wallet_id: int, session: Annotated[AsyncSession, Depends(models.get_session)]):
+    item = await session.get(DBItem, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
 
-    wallet = session.get(Wallet, wallet_id)
+    wallet = session.get(DBWallet, wallet_id)
     if not wallet:
         raise HTTPException(status_code=404, detail="Wallet not found")
 
     if wallet.balance < item.price:
         raise HTTPException(status_code=400, detail="Insufficient balance")
     
-    merchant = session.get(Merchant, item.merchant_id)
+    merchant = session.get(DBMerchant, item.merchant_id)
 
-    # Update wallet balance
     wallet.balance -= item.price
     merchant.balance += item.price
     
-    # Create transaction
-    transaction = Transaction(price=item.price, wallet_id=wallet.id, item_id=item.id, description=f"Bought {item.name}")
+    transaction = DBTransaction(price=item.price, wallet_id=wallet.id, item_id=item.id, description=f"Bought {item.name}")
     
     session.add(wallet)
     session.add(transaction)
     session.commit()
     
-    # Fetch merchant information
     merchant = item.merchant
 
     return {

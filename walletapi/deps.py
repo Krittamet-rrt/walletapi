@@ -1,9 +1,9 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, logger, status
 from fastapi.security import OAuth2PasswordBearer
 
 import typing
 import jwt
-import logging
+
 from . import models
 from . import security
 from . import config

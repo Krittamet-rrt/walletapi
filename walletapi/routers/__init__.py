@@ -1,4 +1,4 @@
-from . import items, merchants, wallets, transactions, buy_item
+from . import items, merchants, wallets, transactions, buy_item, users
 
 
 def init_routers(app):
