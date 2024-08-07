@@ -1,19 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Security, status
-from fastapi.security import (
-    HTTPAuthorizationCredentials,
-    HTTPBasicCredentials,
-    HTTPBearer,
-    OAuth2PasswordRequestForm,
-)
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+
 
 
 from sqlmodel import select
 from typing import Annotated
 import datetime
 
-from .. import config
-from .. import models
-from .. import security
+import config
+import models
+import security
 
 router = APIRouter(tags=["authentication"])
 

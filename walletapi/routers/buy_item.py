@@ -6,7 +6,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from models.dbmodels import DBWallet, DBItem, DBMerchant, DBTransaction
 
-from .. import models
+import models
 
 router = APIRouter(prefix="/buy_item", tags=["Buy Item"])
 

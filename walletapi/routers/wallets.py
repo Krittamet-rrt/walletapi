@@ -7,7 +7,7 @@ from typing import Annotated
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from .. import models
+import models
 
 router = APIRouter(prefix="/wallets", tags=["Wallet"])
 

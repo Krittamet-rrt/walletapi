@@ -10,7 +10,7 @@ from sqlmodel import select
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from .. import models
+import models
 
 router = APIRouter(prefix="/merchants", tags=["Merchant"])
 
@@ -28,7 +28,7 @@ async def read_merchants(session: Annotated[AsyncSession, Depends(models.get_ses
         size_per_page=len(db_merchants),
     )
 
-@router.post("",response_model=Merchant)
+@router.post("", response_model=Merchant)
 async def create_merchant(merchant: CreateMerchant, session: Annotated[AsyncSession, Depends(models.get_session)]) -> Merchant:
     db_merchant = DBMerchant(**merchant.dict())
     session.add(db_merchant)

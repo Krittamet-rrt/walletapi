@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import jwt
 
-from . import config
+import config
 
 
 ALGORITHM = "HS256"

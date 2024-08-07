@@ -5,10 +5,10 @@ from typing import Annotated
 from sqlmodel import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import models
+import models
 
-from ..models.item import Item, CreateItem, UpdateItem, ItemList
-from ..models.dbmodels import DBItem, DBMerchant
+from models.item import Item, CreateItem, UpdateItem, ItemList
+from models.dbmodels import DBItem, DBMerchant
 
 router = APIRouter(prefix="/items", tags=["Item"])
 

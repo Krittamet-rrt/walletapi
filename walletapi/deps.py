@@ -4,9 +4,9 @@ from fastapi.security import OAuth2PasswordBearer
 import typing
 import jwt
 
-from . import models
-from . import security
-from . import config
+import models
+import security
+import config
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
@@ -17,7 +17,7 @@ settings = config.get_settings()
 async def get_current_user(
     token: typing.Annotated[str, Depends(oauth2_scheme)],
     session: typing.Annotated[models.AsyncSession, Depends(models.get_session)],
-) -> models.User:
+) -> models.user:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -44,16 +44,16 @@ async def get_current_user(
 
 
 async def get_current_active_user(
-    current_user: typing.Annotated[models.User, Depends(get_current_user)]
-) -> models.User:
+    current_user: typing.Annotated[models.user, Depends(get_current_user)]
+) -> models.user:
     if current_user.status != "active":
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
 
 async def get_current_active_superuser(
-    current_user: typing.Annotated[models.User, Depends(get_current_user)],
-) -> models.User:
+    current_user: typing.Annotated[models.user, Depends(get_current_user)],
+) -> models.user:
     if "admin" not in current_user.roles:
         raise HTTPException(
             status_code=400, detail="The user doesn't have enough privileges"
@@ -67,7 +67,7 @@ class RoleChecker:
 
     def __call__(
         self,
-        user: typing.Annotated[models.User, Depends(get_current_active_user)],
+        user: typing.Annotated[models.user, Depends(get_current_active_user)],
     ):
         for role in user.roles:
             if role in self.allowed_roles:

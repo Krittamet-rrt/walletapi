@@ -13,8 +13,8 @@ def init_db(settings):
   
   engine = create_async_engine(
      settings.SQLDB_URL,
-     echo=True,
      future=True,
+     echo=True,
      connect_args=connect_args,
   )
 
