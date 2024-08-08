@@ -12,7 +12,7 @@ import models
 
 router = APIRouter(prefix="/transactions", tags=["Transaction"])
 
-@router.get("",response_model=list[Transaction])
+@router.get("",response_model=TransactionList)
 async def read_transactions(session: Annotated[AsyncSession, Depends(models.get_session)], page: int = 1, page_size: int = 10,) -> TransactionList:
     result = await session.exec(
         select(DBTransaction).offset((page - 1) * page_size).limit(page_size)

@@ -1,17 +1,13 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
-from sqlmodel import Field, Relationship
-
-from models.user import DBUser
-
-
 class ItemBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     name: str
     description: Optional[str] = None
     price: float = 0.12
     tax: Optional[float] = None
+    user_id: int | None = 1
 
 class CreateItem(ItemBase):
     pass

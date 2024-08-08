@@ -1,11 +1,5 @@
 from pydantic import BaseModel, ConfigDict
 
-from typing import Optional
-
-from sqlmodel import Field, Relationship
-
-from models.user import DBUser
-
 class MerchantBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     name: str

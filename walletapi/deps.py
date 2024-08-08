@@ -8,7 +8,8 @@ import models
 import security
 import config
 
-from models.user import User, DBUser
+from models.user import User
+from models.dbmodels import DBUser
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 

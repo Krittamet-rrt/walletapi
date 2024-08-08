@@ -17,7 +17,7 @@ router = APIRouter(prefix="/items", tags=["Item"])
 
 SIZE_PER_PAGE = 50
 
-@router.get("", response_model=list[Item])
+@router.get("", response_model=ItemList)
 async def read_items(session: Annotated[AsyncSession, Depends(models.get_session)], page: int = 1) -> ItemList:
     result = await session.exec(
         select(DBItem).offset((page - 1) * SIZE_PER_PAGE).limit(SIZE_PER_PAGE)
@@ -31,9 +31,8 @@ async def read_items(session: Annotated[AsyncSession, Depends(models.get_session
     print("page_count", page_count)
     print("items", db_items)
 
-    return ItemList.from_orm(
-        dict(items=db_items, page=page, page_count=page_count, size_per_page=SIZE_PER_PAGE)
-    )
+    return ItemList(items=db_items, page=page, page_count=page_count, size_per_page=SIZE_PER_PAGE)
+    
 
 @router.post("/{merchant.id}", response_model=Item)
 async def create_item(item: CreateItem, merchant_id: int, current_user: Annotated[User, Depends(deps.get_current_user)], session: Annotated[AsyncSession, Depends(models.get_session)],) -> Item:

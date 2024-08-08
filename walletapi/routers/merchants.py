@@ -19,14 +19,14 @@ router = APIRouter(prefix="/merchants", tags=["Merchant"])
 
 @router.post("", response_model=Merchant)
 async def create_merchant(merchant: CreateMerchant, current_user: Annotated[User, Depends(deps.get_current_user)], session: Annotated[AsyncSession, Depends(models.get_session)]) -> Merchant:
-    db_merchant = DBMerchant.parse_obj(**merchant.dict())
+    db_merchant = DBMerchant(**merchant.dict())
     db_merchant.user = current_user
     session.add(db_merchant)
     await session.commit()
     await session.refresh(db_merchant)
     return Merchant.from_orm(db_merchant)
 
-@router.get("",response_model=list[Merchant])
+@router.get("",response_model=MerchantList)
 async def read_merchants(session: Annotated[AsyncSession, Depends(models.get_session)], page: int = 1, page_size: int = 10,) -> MerchantList:
     result = await session.exec(
         select(DBMerchant).offset((page - 1) * page_size).limit(page_size)
