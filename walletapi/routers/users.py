@@ -12,6 +12,30 @@ import models
 
 router = APIRouter(prefix="/users", tags=["users"])
 
+@router.post("/create", response_model=User)
+async def create(
+    user_info: RegisteredUser,
+    session: Annotated[AsyncSession, Depends(models.get_session)],
+) -> User:
+
+    result = await session.exec(
+        select(DBUser).where(DBUser.username == user_info.username)
+    )
+
+    user = result.one_or_none()
+
+    if user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This username is exists.",
+        )
+
+    user = DBUser.from_orm(user_info)
+    await user.set_password(user_info.password)
+    session.add(user)
+    await session.commit()
+
+    return user
 
 @router.get("/me", response_model=User)
 def get_me(current_user: User = Depends(deps.get_current_user)) -> User:
@@ -33,31 +57,6 @@ async def get(
         )
     return user
 
-
-@router.post("/create", response_model=User)
-async def create(
-    user_info: RegisteredUser,
-    session: Annotated[AsyncSession, Depends(models.get_session)],
-) -> User:
-
-    result = await session.exec(
-        select(DBUser).where(DBUser.username == user_info.username)
-    )
-
-    user = result.one_or_none()
-
-    if user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="This username is exists.",
-        )
-
-    user = DBUser.from_orm(user_info)
-    await user.set_password(user_info.password)
-    await session.add(user)
-    await session.commit()
-
-    return user
 
 
 @router.put("/{user_id}/change_password", response_model=User)
@@ -116,7 +115,7 @@ async def update(
     for key, value in set_dict.items():
         setattr(user, key, value)
 
-    await session.add(user)
+    session.add(user)
     await session.commit()
     await session.refresh(user)
 

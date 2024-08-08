@@ -14,9 +14,9 @@ router = APIRouter(prefix="/wallets", tags=["Wallet"])
 @router.post("",response_model=Wallet)
 async def create_wallet(wallet: CreateWallet, session: Annotated[AsyncSession, Depends(models.get_session)]) -> Wallet:
     db_wallet = DBWallet(**wallet.dict())
-    await session.add(db_wallet)
+    session.add(db_wallet)
     await session.commit()
-    session.refresh(db_wallet)
+    await session.refresh(db_wallet)
     return Wallet.from_orm(db_wallet)
 
 @router.get("/{wallet_id}", response_model=Wallet)
@@ -32,9 +32,9 @@ async def update_wallet(wallet_id: int, wallet: UpdateWallet, session: Annotated
     if db_wallet:
         for key, value in wallet.dict().items():
             setattr(db_wallet, key, value)
-        await session.add(db_wallet)
+        session.add(db_wallet)
         await session.commit()
-        session.refresh(db_wallet)
+        await session.refresh(db_wallet)
         return Wallet.from_orm(db_wallet)
     raise HTTPException(status_code=404, detail="Wallet not found")
 

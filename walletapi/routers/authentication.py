@@ -1,14 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-
-
 from sqlmodel import select
+
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 from typing import Annotated
 import datetime
 
 import config
 import models
+from models.user import Token
+from models.dbmodels import DBUser
 import security
 
 router = APIRouter(tags=["authentication"])
@@ -21,18 +24,18 @@ settings = config.get_settings()
 )
 async def authentication(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    session: Annotated[models.AsyncSession, Depends(models.get_session)],
-) -> models.Token:
+    session: Annotated[AsyncSession, Depends(models.get_session)],
+) -> Token:
 
     result = await session.exec(
-        select(models.DBUser).where(models.DBUser.username == form_data.username)
+        select(DBUser).where(DBUser.username == form_data.username)
     )
 
     user = result.one_or_none()
 
     if not user:
         result = await session.exec(
-            select(models.DBUser).where(models.DBUser.email == form_data.username)
+            select(DBUser).where(DBUser.email == form_data.username)
         )
         user = result.one_or_none()
 
@@ -59,7 +62,7 @@ async def authentication(
     access_token_expires = datetime.timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
-    return models.Token(
+    return Token(
         access_token=security.create_access_token(
             data={"sub": user.id},
             expires_delta=access_token_expires,
