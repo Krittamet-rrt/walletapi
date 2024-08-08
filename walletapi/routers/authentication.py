@@ -10,8 +10,7 @@ import datetime
 
 import config
 import models
-from models.user import Token
-from models.dbmodels import DBUser
+from models.user import Token, DBUser
 import security
 
 router = APIRouter(tags=["authentication"])

@@ -1,6 +1,10 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
+from sqlmodel import Field, Relationship
+
+from models.user import DBUser
+
 
 class ItemBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -22,5 +26,5 @@ class ItemList(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     items: list[Item]
     page: int
-    page_size: int
+    page_count: int
     size_per_page: int

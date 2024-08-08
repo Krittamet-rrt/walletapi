@@ -8,11 +8,14 @@ from typing import Annotated
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 import models
+import deps
+
+from models.user import User
 
 router = APIRouter(prefix="/wallets", tags=["Wallet"])
 
 @router.post("",response_model=Wallet)
-async def create_wallet(wallet: CreateWallet, session: Annotated[AsyncSession, Depends(models.get_session)]) -> Wallet:
+async def create_wallet(wallet: CreateWallet, current_user: Annotated[User, Depends(deps.get_current_user)], session: Annotated[AsyncSession, Depends(models.get_session)]) -> Wallet:
     db_wallet = DBWallet(**wallet.dict())
     session.add(db_wallet)
     await session.commit()
@@ -27,7 +30,7 @@ async def read_wallet(wallet_id: int, session: Annotated[AsyncSession, Depends(m
     raise HTTPException(status_code=404, detail="Wallet not found")
 
 @router.put("/{wallet_id}", response_model=Wallet)
-async def update_wallet(wallet_id: int, wallet: UpdateWallet, session: Annotated[AsyncSession, Depends(models.get_session)]) -> Wallet:
+async def update_wallet(wallet_id: int, current_user: Annotated[User, Depends(deps.get_current_user)], wallet: UpdateWallet, session: Annotated[AsyncSession, Depends(models.get_session)]) -> Wallet:
     db_wallet = await session.get(DBWallet, wallet_id)
     if db_wallet:
         for key, value in wallet.dict().items():
@@ -39,7 +42,7 @@ async def update_wallet(wallet_id: int, wallet: UpdateWallet, session: Annotated
     raise HTTPException(status_code=404, detail="Wallet not found")
 
 @router.delete("/{wallet_id}")
-async def delete_wallet(wallet_id: int, session: Annotated[AsyncSession, Depends(models.get_session)]) -> Wallet:
+async def delete_wallet(wallet_id: int, current_user: Annotated[User, Depends(deps.get_current_user)], session: Annotated[AsyncSession, Depends(models.get_session)]) -> Wallet:
     db_wallet = await session.get(DBWallet, wallet_id)
     if db_wallet:
         session.delete(db_wallet)

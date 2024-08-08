@@ -2,33 +2,45 @@ from fastapi import APIRouter, HTTPException, Depends
 
 from typing import Annotated
 
-from sqlmodel import select
+from sqlmodel import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import models
+import deps
+import math
 
 from models.item import Item, CreateItem, UpdateItem, ItemList
+from models.user import User
 from models.dbmodels import DBItem, DBMerchant
 
 router = APIRouter(prefix="/items", tags=["Item"])
 
-@router.get("",response_model=list[Item])
-async def read_items(session: Annotated[AsyncSession, Depends(models.get_session)], page: int = 1, page_size: int = 10,) -> ItemList:
+SIZE_PER_PAGE = 50
+
+@router.get("", response_model=list[Item])
+async def read_items(session: Annotated[AsyncSession, Depends(models.get_session)], page: int = 1) -> ItemList:
     result = await session.exec(
-        select(DBItem).offset((page - 1) * page_size).limit(page_size)
+        select(DBItem).offset((page - 1) * SIZE_PER_PAGE).limit(SIZE_PER_PAGE)
     )
     db_items = result.all()
 
-    return ItemList(
-        items=db_items, page=page, page_size=page_size, size_per_page=len(db_items)
+    page_count = int(
+        math.ceil((await session.exec(select(func.count(DBItem.id)))).first()/SIZE_PER_PAGE)
+    )
+
+    print("page_count", page_count)
+    print("items", db_items)
+
+    return ItemList.from_orm(
+        dict(items=db_items, page=page, page_count=page_count, size_per_page=SIZE_PER_PAGE)
     )
 
 @router.post("/{merchant.id}", response_model=Item)
-async def create_item(item: CreateItem, merchant_id: int, session: Annotated[AsyncSession, Depends(models.get_session)],) -> Item:
+async def create_item(item: CreateItem, merchant_id: int, current_user: Annotated[User, Depends(deps.get_current_user)], session: Annotated[AsyncSession, Depends(models.get_session)],) -> Item:
     db_item = DBItem(**item.dict())
     db_item.merchant_id = merchant_id
     if merchant_id:
-        merchant = session.get(DBMerchant, DBItem.merchant_id)
+        merchant = await session.get(DBMerchant, merchant_id)
         if not merchant:
             raise HTTPException(status_code=404, detail="Merchant not found")
         db_item.merchant = merchant
@@ -45,7 +57,7 @@ async def read_item(item_id: int, session: Annotated[AsyncSession, Depends(model
     raise HTTPException(status_code=404, detail="Item not found")
 
 @router.put("/{wallet_id}", response_model=Item)
-async def update_item(item_id: int, item: UpdateItem, session: Annotated[AsyncSession, Depends(models.get_session)],) -> Item:
+async def update_item(item_id: int, item: UpdateItem, current_user: Annotated[User, Depends(deps.get_current_user)], session: Annotated[AsyncSession, Depends(models.get_session)],) -> Item:
     db_item = await session.get(DBItem, item_id)
     if db_item:
         for key, value in item.dict().items():
@@ -57,7 +69,7 @@ async def update_item(item_id: int, item: UpdateItem, session: Annotated[AsyncSe
     raise HTTPException(status_code=404, detail="Item not found")
 
 @router.delete("/{wallet_id}")
-async def delete_item(item_id: int, session: Annotated[AsyncSession, Depends(models.get_session)],) -> dict:
+async def delete_item(item_id: int, current_user: Annotated[User, Depends(deps.get_current_user)], session: Annotated[AsyncSession, Depends(models.get_session)],) -> dict:
     db_item = await session.get(DBItem, item_id)
     if db_item:
         await session.delete(db_item)

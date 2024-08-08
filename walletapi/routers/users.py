@@ -4,8 +4,7 @@ from sqlmodel import select
 
 from typing import Annotated, Dict
 
-from models.user import User, RegisteredUser, ChangedPassword, UpdatedUser
-from models.dbmodels import DBUser
+from models.user import User, RegisteredUser, ChangedPassword, UpdatedUser, DBUser
 
 import deps
 import models

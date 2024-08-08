@@ -8,6 +8,7 @@ import models
 import security
 import config
 
+from models.user import User, DBUser
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
@@ -17,7 +18,7 @@ settings = config.get_settings()
 async def get_current_user(
     token: typing.Annotated[str, Depends(oauth2_scheme)],
     session: typing.Annotated[models.AsyncSession, Depends(models.get_session)],
-) -> models.user:
+) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -36,7 +37,7 @@ async def get_current_user(
         print(e)
         raise credentials_exception
 
-    user = await session.get(models.DBUser, user_id)
+    user = await session.get(DBUser, user_id)
     if user is None:
         raise credentials_exception
 
@@ -44,16 +45,16 @@ async def get_current_user(
 
 
 async def get_current_active_user(
-    current_user: typing.Annotated[models.user, Depends(get_current_user)]
-) -> models.user:
+    current_user: typing.Annotated[User, Depends(get_current_user)]
+) -> User:
     if current_user.status != "active":
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
 
 async def get_current_active_superuser(
-    current_user: typing.Annotated[models.user, Depends(get_current_user)],
-) -> models.user:
+    current_user: typing.Annotated[User, Depends(get_current_user)],
+) -> User:
     if "admin" not in current_user.roles:
         raise HTTPException(
             status_code=400, detail="The user doesn't have enough privileges"
@@ -67,7 +68,7 @@ class RoleChecker:
 
     def __call__(
         self,
-        user: typing.Annotated[models.user, Depends(get_current_active_user)],
+        user: typing.Annotated[User, Depends(get_current_active_user)],
     ):
         for role in user.roles:
             if role in self.allowed_roles:

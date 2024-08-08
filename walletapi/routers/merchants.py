@@ -10,10 +10,21 @@ from sqlmodel import select
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from models.user import User
+
 import models
+import deps
 
 router = APIRouter(prefix="/merchants", tags=["Merchant"])
 
+@router.post("", response_model=Merchant)
+async def create_merchant(merchant: CreateMerchant, current_user: Annotated[User, Depends(deps.get_current_user)], session: Annotated[AsyncSession, Depends(models.get_session)]) -> Merchant:
+    db_merchant = DBMerchant.parse_obj(**merchant.dict())
+    db_merchant.user = current_user
+    session.add(db_merchant)
+    await session.commit()
+    await session.refresh(db_merchant)
+    return Merchant.from_orm(db_merchant)
 
 @router.get("",response_model=list[Merchant])
 async def read_merchants(session: Annotated[AsyncSession, Depends(models.get_session)], page: int = 1, page_size: int = 10,) -> MerchantList:
@@ -28,13 +39,6 @@ async def read_merchants(session: Annotated[AsyncSession, Depends(models.get_ses
         size_per_page=len(db_merchants),
     )
 
-@router.post("", response_model=Merchant)
-async def create_merchant(merchant: CreateMerchant, session: Annotated[AsyncSession, Depends(models.get_session)]) -> Merchant:
-    db_merchant = DBMerchant(**merchant.dict())
-    session.add(db_merchant)
-    await session.commit()
-    await session.refresh(db_merchant)
-    return Merchant.from_orm(db_merchant)
 
 @router.get("/{merchant_id}", response_model=Merchant)
 async def read_merchant(merchant_id: int, session: Annotated[AsyncSession, Depends(models.get_session)]) -> Merchant:

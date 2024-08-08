@@ -7,23 +7,26 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from models.dbmodels import DBWallet, DBItem, DBMerchant, DBTransaction
 
 import models
+import deps
+
+from models.user import User
 
 router = APIRouter(prefix="/buy_item", tags=["Buy Item"])
 
 @router.post("")
-async def buy_item(item_id: int, wallet_id: int, session: Annotated[AsyncSession, Depends(models.get_session)]):
+async def buy_item(item_id: int, wallet_id: int, current_user: Annotated[User, Depends(deps.get_current_user)], session: Annotated[AsyncSession, Depends(models.get_session)]):
     item = await session.get(DBItem, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
 
-    wallet = session.get(DBWallet, wallet_id)
+    wallet = await session.get(DBWallet, wallet_id)
     if not wallet:
         raise HTTPException(status_code=404, detail="Wallet not found")
 
     if wallet.balance < item.price:
         raise HTTPException(status_code=400, detail="Insufficient balance")
     
-    merchant = session.get(DBMerchant, item.merchant_id)
+    merchant = await session.get(DBMerchant, item.merchant_id)
 
     wallet.balance -= item.price
     merchant.balance += item.price
@@ -32,7 +35,7 @@ async def buy_item(item_id: int, wallet_id: int, session: Annotated[AsyncSession
     
     session.add(wallet)
     session.add(transaction)
-    session.commit()
+    await session.commit()
     
     merchant = item.merchant
 
