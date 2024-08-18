@@ -6,7 +6,7 @@ from models.dbmodels import DBMerchant
 
 from typing import Annotated
 
-from sqlmodel import select
+from sqlmodel import select, func
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -14,6 +14,7 @@ from models.user import User
 
 import models
 import deps
+import math
 
 router = APIRouter(prefix="/merchants", tags=["Merchant"])
 
@@ -26,18 +27,23 @@ async def create_merchant(merchant: CreateMerchant, current_user: Annotated[User
     await session.refresh(db_merchant)
     return Merchant.from_orm(db_merchant)
 
+SIZE_PER_PAGE = 50
+
 @router.get("",response_model=MerchantList)
-async def read_merchants(session: Annotated[AsyncSession, Depends(models.get_session)], page: int = 1, page_size: int = 10,) -> MerchantList:
+async def read_merchants(session: Annotated[AsyncSession, Depends(models.get_session)], page: int = 1) -> MerchantList:
     result = await session.exec(
-        select(DBMerchant).offset((page - 1) * page_size).limit(page_size)
+        select(DBMerchant).offset((page - 1) * SIZE_PER_PAGE).limit(SIZE_PER_PAGE)
     )
-    db_merchants = result.all()
-    return MerchantList(
-        merchants=db_merchants,
-        page=page,
-        page_size=page_size,
-        size_per_page=len(db_merchants),
+    db_merchant = result.all()
+
+    page_count = int(
+        math.ceil((await session.exec(select(func.count(DBMerchant.id)))).first()/SIZE_PER_PAGE)
     )
+
+    print("page_count", page_count)
+    print("merchant", db_merchant)
+
+    return MerchantList(merchant=db_merchant, page=page, page_count=page_count, size_per_page=SIZE_PER_PAGE)
 
 
 @router.get("/{merchant_id}", response_model=Merchant)
@@ -48,7 +54,7 @@ async def read_merchant(merchant_id: int, session: Annotated[AsyncSession, Depen
     raise HTTPException(status_code=404, detail="Merchant not found")
 
 @router.put("/{merchant_id}", response_model=Merchant)
-async def update_merchant(merchant_id: int, merchant: UpdateMerchant, session: Annotated[AsyncSession, Depends(models.get_session)]) -> Merchant:
+async def update_merchant(merchant_id: int, current_user: Annotated[User, Depends(deps.get_current_user)], merchant: UpdateMerchant, session: Annotated[AsyncSession, Depends(models.get_session)]) -> Merchant:
     db_merchant = await session.get(DBMerchant, merchant_id)
     if db_merchant:
         for key, value in merchant.dict().items():
@@ -60,7 +66,7 @@ async def update_merchant(merchant_id: int, merchant: UpdateMerchant, session: A
     raise HTTPException(status_code=404, detail="Merchant not found")
 
 @router.delete("/{merchant_id}")
-async def delete_merchant(merchant_id: int, session: Annotated[AsyncSession, Depends(models.get_session)]) -> dict:
+async def delete_merchant(merchant_id: int, current_user: Annotated[User, Depends(deps.get_current_user)], session: Annotated[AsyncSession, Depends(models.get_session)]) -> dict:
     db_merchant = session.get(Merchant, merchant_id)
     if db_merchant:
         await session.delete(db_merchant)

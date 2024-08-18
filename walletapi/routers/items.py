@@ -75,3 +75,4 @@ async def delete_item(item_id: int, current_user: Annotated[User, Depends(deps.g
         await session.commit()
         return {"message": "Item deleted successfully"}
     raise HTTPException(status_code=404, detail="Item not found")
+

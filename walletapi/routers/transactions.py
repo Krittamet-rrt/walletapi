@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 
-from sqlmodel import select
+from sqlmodel import select, func
 from models.transaction import Transaction, UpdateTransaction, TransactionList
 from models.dbmodels import DBTransaction
 
@@ -9,21 +9,27 @@ from typing import Annotated
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 import models
+import math
 
 router = APIRouter(prefix="/transactions", tags=["Transaction"])
 
+SIZE_PER_PAGE = 50
+
 @router.get("",response_model=TransactionList)
-async def read_transactions(session: Annotated[AsyncSession, Depends(models.get_session)], page: int = 1, page_size: int = 10,) -> TransactionList:
+async def read_transactions(session: Annotated[AsyncSession, Depends(models.get_session)], page: int = 1) -> TransactionList:
     result = await session.exec(
-        select(DBTransaction).offset((page - 1) * page_size).limit(page_size)
+        select(DBTransaction).offset((page - 1) * SIZE_PER_PAGE).limit(SIZE_PER_PAGE)
     )
-    db_transactions = result.all()
-    return TransactionList(
-        transactions=db_transactions,
-        page=page,
-        page_size=page_size,
-        size_per_page=len(db_transactions),
+    db_transaction = result.all()
+
+    page_count = int(
+        math.ceil((await session.exec(select(func.count(DBTransaction.id)))).first()/SIZE_PER_PAGE)
     )
+
+    print("page_count", page_count)
+    print("transaction", db_transaction)
+
+    return TransactionList(transaction=db_transaction, page=page, page_count=page_count, size_per_page=SIZE_PER_PAGE)
 
 @router.get("/{transaction_id}", response_model=Transaction)
 async def read_transaction(transaction_id: int, session: Annotated[AsyncSession, Depends(models.get_session)]) -> Transaction:
