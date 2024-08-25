@@ -1,7 +1,6 @@
 from typing import Optional
 
 from sqlmodel import Field, SQLModel, Relationship
-from sqlalchemy import Column, DateTime
 
 from .merchant import MerchantBase
 from .item import ItemBase
@@ -25,8 +24,7 @@ class DBUser(UserBase, SQLModel, table=True):
 
     register_date: datetime.datetime = Field(default_factory=datetime.datetime.now)
     updated_date: datetime.datetime = Field(default_factory=datetime.datetime.now)
-    last_login_date: datetime.datetime = Field(
-        sa_column=Column(DateTime(timezone=True), nullable=True))
+    last_login_date: datetime.datetime | None = Field(default=None)
 
     async def has_roles(self, roles):
         for role in roles:

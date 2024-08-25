@@ -25,9 +25,14 @@ SettingsTesting.model_config = SettingsConfigDict(
     env_file=".testing.env", validate_assignment=True, extra="allow"
 )
 
+@pytest.fixture(scope="session")
+def event_loop():
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 @pytest.fixture(name="app", scope="session")
-def app_fixture():
+def app_fixture(event_loop):
     settings = SettingsTesting()
     path = pathlib.Path("test-data")
     if not path.exists():
@@ -38,6 +43,8 @@ def app_fixture():
     asyncio.run(models.recreate_table())
 
     yield app
+
+    asyncio.run(models.close_session())
 
 
 @pytest.fixture(name="client", scope="session")
@@ -59,6 +66,7 @@ async def get_session() -> models.AsyncIterator[models.AsyncSession]:
     )
     async with async_session() as session:
         yield session
+    await session.close()
 
 
 @pytest_asyncio.fixture(name="user1")
@@ -73,20 +81,20 @@ async def example_user1(session: models.AsyncSession) -> models.DBUser:
     if user:
         return user
 
-    current_time = datetime.datetime.now(datetime.timezone.utc)
     user = models.DBUser(
         username=username,
         password=password,
         email="test@test.com",
         first_name="Firstname",
         last_name="lastname",
-        last_login_date=current_time,
+        last_login_date=datetime.datetime.now(),
     )
 
     await user.set_password(password)
     session.add(user)
     await session.commit()
     await session.refresh(user)
+    await session.close()
     return user
 
 
@@ -137,4 +145,5 @@ async def example_merchant_user1(
     session.add(merchant)
     await session.commit()
     await session.refresh(merchant)
+    await session.close()
     return merchant

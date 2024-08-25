@@ -1,5 +1,6 @@
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.pool import NullPool
 
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -27,6 +28,7 @@ def init_db(settings):
         echo=True,
         future=True,
         connect_args=connect_args,
+        poolclass=NullPool,
     )
 
 
