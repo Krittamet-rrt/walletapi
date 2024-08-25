@@ -4,12 +4,13 @@ from typing import Annotated
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from models.dbmodels import DBWallet, DBItem, DBMerchant, DBTransaction
+from ..models.dbmodels import DBWallet, DBItem, DBMerchant, DBTransaction
 
-import models
-import deps
+from .. import models
+from .. import deps
+import datetime
 
-from models.user import User
+from ..models.user import User
 
 router = APIRouter(prefix="/buy_item", tags=["Buy Item"])
 
@@ -31,7 +32,7 @@ async def buy_item(item_id: int, wallet_id: int, current_user: Annotated[User, D
     wallet.balance -= item.price
     merchant.balance += item.price
     
-    transaction = DBTransaction(price=item.price, wallet_id=wallet.id, item_id=item.id, description=f"Bought {item.name}")
+    transaction = DBTransaction(price=item.price, wallet_id=wallet.id, item_id=item.id, description=f"Bought {item.name}", transaction_date=datetime.datetime.now(tz=datetime.timezone.utc))
     
     session.add(wallet)
     session.add(transaction)

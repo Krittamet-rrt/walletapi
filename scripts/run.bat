@@ -1,0 +1,1 @@
+uvicorn "walletapi.main:create_app" --factory --reload

@@ -6,26 +6,27 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 
 class UserBase(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
-    email: str = pydantic.Field(example="admin@email.local")
-    username: str = pydantic.Field(example="admin")
-    first_name: str = pydantic.Field(example="Firstname")
-    last_name: str = pydantic.Field(example="Lastname")
+    email: str = pydantic.Field(json_schema_extra=dict(example="admin@email.local"))
+    username: str = pydantic.Field(json_schema_extra=dict(example="admin"))
+    first_name: str = pydantic.Field(json_schema_extra=dict(example="Firstname"))
+    last_name: str = pydantic.Field(json_schema_extra=dict(example="Lastname"))
 
 
 class User(UserBase):
     id: int
     last_login_date: datetime.datetime | None = pydantic.Field(
-        example="2023-01-01T00:00:00.000000", default=None
+        json_schema_extra=dict(example="2023-01-01T00:00:00.000000"), default=None
     )
     register_date: datetime.datetime | None = pydantic.Field(
-        example="2023-01-01T00:00:00.000000", default=None
+        json_schema_extra=dict(example="2023-01-01T00:00:00.000000"), default=None
     )
+
 
 class ReferenceUser(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
-    username: str = pydantic.Field(example="admin")
-    first_name: str = pydantic.Field(example="Firstname")
-    last_name: str = pydantic.Field(example="Lastname")
+    username: str
+    first_name: str
+    last_name: str
 
 
 class UserList(BaseModel):
@@ -49,7 +50,7 @@ class ResetedPassword(BaseModel):
 
 
 class RegisteredUser(UserBase):
-    password: str = pydantic.Field(example="password")
+    password: str = pydantic.Field(json_schema_extra=dict(example="password"))
 
 
 class UpdatedUser(UserBase):
@@ -64,10 +65,7 @@ class Token(BaseModel):
     expires_at: datetime.datetime
     scope: str
     issued_at: datetime.datetime
-
-
-class TokenData(BaseModel):
-    user_id: str | None = None
+    user_id: int
 
 
 class ChangedPasswordUser(BaseModel):

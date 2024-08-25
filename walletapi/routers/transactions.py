@@ -1,14 +1,14 @@
 from fastapi import APIRouter, HTTPException, Depends
 
 from sqlmodel import select, func
-from models.transaction import Transaction, UpdateTransaction, TransactionList
-from models.dbmodels import DBTransaction
+from ..models.transaction import Transaction, UpdateTransaction, TransactionList
+from ..models.dbmodels import DBTransaction
 
 from typing import Annotated
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-import models
+from .. import models
 import math
 
 router = APIRouter(prefix="/transactions", tags=["Transaction"])
@@ -35,7 +35,7 @@ async def read_transactions(session: Annotated[AsyncSession, Depends(models.get_
 async def read_transaction(transaction_id: int, session: Annotated[AsyncSession, Depends(models.get_session)]) -> Transaction:
     db_transaction = await session.get(DBTransaction, transaction_id)
     if db_transaction:
-        return Transaction.from_orm(db_transaction)
+        return Transaction.model_validate(db_transaction)
     raise HTTPException(status_code=404, detail="Transaction not found")
 
 @router.put("/{transaction_id}", response_model=Transaction)
@@ -47,7 +47,7 @@ async def update_transaction(transaction_id: int, transaction: UpdateTransaction
         session.add(db_transaction)
         await session.commit()
         await session.refresh(db_transaction)
-        return Transaction.from_orm(db_transaction)
+        return Transaction.model_validate(db_transaction)
     raise HTTPException(status_code=404, detail="Transaction not found")
 
 @router.delete("/{transaction_id}")

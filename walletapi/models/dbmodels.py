@@ -1,18 +1,21 @@
 from typing import Optional
 
 from sqlmodel import Field, SQLModel, Relationship
+from sqlalchemy import Column, DateTime
 
-from models.merchant import MerchantBase
-from models.item import ItemBase
-from models.wallet import WalletBase
-from models.transaction import TransactionBase
-from models.user import UserBase
+from .merchant import MerchantBase
+from .item import ItemBase
+from .wallet import WalletBase
+from .transaction import TransactionBase
+from .user import UserBase
 
 import datetime
 
-from passlib.context import CryptContext
+import bcrypt
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# from passlib.context import CryptContext
+
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class DBUser(UserBase, SQLModel, table=True):
     __tablename__ = "users"
@@ -22,7 +25,8 @@ class DBUser(UserBase, SQLModel, table=True):
 
     register_date: datetime.datetime = Field(default_factory=datetime.datetime.now)
     updated_date: datetime.datetime = Field(default_factory=datetime.datetime.now)
-    last_login_date: datetime.datetime | None = Field(default=None)
+    last_login_date: datetime.datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True))
 
     async def has_roles(self, roles):
         for role in roles:
@@ -30,15 +34,18 @@ class DBUser(UserBase, SQLModel, table=True):
                 return True
         return False
 
+    async def get_encrypted_password(self, plain_password):
+        return bcrypt.hashpw(
+            plain_password.encode("utf-8"), salt=bcrypt.gensalt()
+        ).decode("utf-8")
+
     async def set_password(self, plain_password):
-        self.password = pwd_context.hash(plain_password)
+        self.password = await self.get_encrypted_password(plain_password)
 
     async def verify_password(self, plain_password):
-        print(plain_password, self.password)
-        return pwd_context.verify(plain_password, self.password)
-
-    async def is_use_citizen_id_as_password(self):
-        return pwd_context.verify(self.citizen_id, self.password)
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"), self.password.encode("utf-8")
+        )
     
 class DBWallet(WalletBase, SQLModel, table=True):
     __tablename__ = "wallets"
@@ -68,3 +75,4 @@ class DBTransaction(TransactionBase, SQLModel, table=True):
     wallet: DBWallet = Relationship(back_populates="transactions")
     item_id: int = Field(foreign_key="items.id")
     item: Optional[DBItem] = Relationship(back_populates="transactions")
+    transaction_date: datetime.datetime = Field(default_factory=datetime.datetime.now)

@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 7 * 24 * 60  # 7 days
 
     model_config = SettingsConfigDict(
-        env_file=".env"
+        env_file=".env", validate_assignment=True, extra="allow"
     )
 
 

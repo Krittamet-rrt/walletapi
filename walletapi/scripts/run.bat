@@ -1,1 +1,0 @@
-uvicorn "main:create_app" --factory --reload

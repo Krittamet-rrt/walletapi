@@ -1,4 +1,4 @@
-from routers import items, merchants, wallets, transactions, buy_item, users, authentication
+from . import items, merchants, wallets, transactions, buy_item, users, authentication
 
 
 def init_routers(app):

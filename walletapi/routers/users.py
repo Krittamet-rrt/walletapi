@@ -4,11 +4,11 @@ from sqlmodel import select
 
 from typing import Annotated, Dict
 
-from models.user import User, RegisteredUser, ChangedPassword, UpdatedUser
-from models.dbmodels import DBUser
+from ..models.user import User, RegisteredUser, ChangedPassword, UpdatedUser
+from ..models.dbmodels import DBUser
 
-import deps
-import models
+from .. import deps
+from .. import models
 
 router = APIRouter(prefix="/users", tags=["users"])
 

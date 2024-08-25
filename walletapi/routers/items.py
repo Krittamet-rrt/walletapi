@@ -5,13 +5,13 @@ from typing import Annotated
 from sqlmodel import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-import models
-import deps
+from .. import models
+from .. import deps
 import math
 
-from models.item import Item, CreateItem, UpdateItem, ItemList
-from models.user import User
-from models.dbmodels import DBItem, DBMerchant
+from ..models.item import Item, CreateItem, UpdateItem, ItemList
+from ..models.user import User
+from ..models.dbmodels import DBItem, DBMerchant
 
 router = APIRouter(prefix="/items", tags=["Item"])
 
@@ -31,12 +31,12 @@ async def read_items(session: Annotated[AsyncSession, Depends(models.get_session
     print("page_count", page_count)
     print("items", db_items)
 
-    return ItemList(items=db_items, page=page, page_count=page_count, size_per_page=SIZE_PER_PAGE)
+    return ItemList.model_validate(items=db_items, page=page, page_count=page_count, size_per_page=SIZE_PER_PAGE)
     
 
 @router.post("/{merchant.id}", response_model=Item)
 async def create_item(item: CreateItem, merchant_id: int, current_user: Annotated[User, Depends(deps.get_current_user)], session: Annotated[AsyncSession, Depends(models.get_session)],) -> Item:
-    db_item = DBItem(**item.dict())
+    db_item = DBItem.model_validate(item)
     db_item.merchant_id = merchant_id
     if merchant_id:
         merchant = await session.get(DBMerchant, merchant_id)
@@ -46,13 +46,13 @@ async def create_item(item: CreateItem, merchant_id: int, current_user: Annotate
     session.add(db_item)
     await session.commit()
     await session.refresh(db_item)
-    return Item.from_orm(db_item)
+    return Item.model_validate(db_item)
 
 @router.get("/{wallet_id}", response_model=Item)
 async def read_item(item_id: int, session: Annotated[AsyncSession, Depends(models.get_session)],) -> Item:
     db_item = await session.get(DBItem, item_id)
     if db_item:
-        return Item.from_orm(db_item)
+        return Item.model_validate(db_item)
     raise HTTPException(status_code=404, detail="Item not found")
 
 @router.put("/{wallet_id}", response_model=Item)
@@ -64,7 +64,7 @@ async def update_item(item_id: int, item: UpdateItem, current_user: Annotated[Us
         session.add(db_item)
         await session.commit()
         await session.refresh(db_item)
-        return Item.from_orm(db_item)
+        return Item.model_validate(db_item)
     raise HTTPException(status_code=404, detail="Item not found")
 
 @router.delete("/{wallet_id}")
